@@ -10,6 +10,7 @@ or
 \$--file FILE provided which contains the jobs to monitor, one per line (other shells)
 
 Additionally, user must be authenticated with aws (e.g., via .aws/config)."
+version="0.1.0"
 # Requirements: aws-cli, jq
 
 # JQ partials
@@ -75,6 +76,11 @@ fi
 
 if [[ "$1" == *"-h"* ]]; then
   echo "$usage"
+  exit
+fi
+
+if [[ "$1" == *"-h"* ]]; then
+  echo "$version"
   exit
 fi
 
