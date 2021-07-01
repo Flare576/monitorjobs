@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/zsh
+# leave as zsh to support environment vars
 
 usage="$(basename "$0") -fh uses aws-cli to monitor the codepipeline status of \$AWS_JOBS_LIST.
 Requirments:
@@ -10,7 +11,7 @@ or
 \$--file FILE provided which contains the jobs to monitor, one per line (other shells)
 
 Additionally, user must be authenticated with aws (e.g., via .aws/config)."
-version="0.1.0"
+version="0.1.1"
 # Requirements: aws-cli, jq
 
 # JQ partials
