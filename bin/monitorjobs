@@ -11,7 +11,7 @@ or
 \$--file FILE provided which contains the jobs to monitor, one per line (other shells)
 
 Additionally, user must be authenticated with aws (e.g., via .aws/config)."
-version="0.1.1"
+version="0.1.2"
 # Requirements: aws-cli, jq
 
 # JQ partials
@@ -39,6 +39,9 @@ awsjobs () {
       --name="${job}" --output=json \
       | jq "$fullJQ"
     )
+    if [ $? -ne 0 ]; then
+      exit
+    fi
     latestNonSuccessful="${latestNonSuccessful%\"}"
     latestNonSuccessful="${latestNonSuccessful#\"}"
     if [ -z "$latestNonSuccessful" ]; then
