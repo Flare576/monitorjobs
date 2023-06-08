@@ -1,18 +1,36 @@
 #!/bin/zsh
 # leave as zsh to support environment vars
+# Requirements: aws-cli, jq
 
-usage="$(basename "$0") -fh uses aws-cli to monitor the codepipeline status of \$AWS_JOBS_LIST.
+usage="$(basename "$0") -fvh uses aws-cli to monitor the codepipeline status of \$AWS_JOBS_LIST.
 Requirments:
 jq and aws-cli installed
 \$AWS_PIPELINE_PROFILE be set to appropriate argument to --profile option of aws-cli
 and either
 \$AWS_JOBS_LIST be set as an array which contains the jobs to monitor (ZSH)
 or
-\$--file FILE provided which contains the jobs to monitor, one per line (other shells)
+-f FILE provided which contains the jobs to monitor, one per line (other shells)
 
 Additionally, user must be authenticated with aws (e.g., via .aws/config)."
-version="0.1.2"
-# Requirements: aws-cli, jq
+version="0.1.3"
+
+while getopts ':vhf:' option; do
+  case "$option" in
+    h) echo "$usage"
+      exit
+      ;;
+    f) jobFile="$OPTARG"
+      echo "sup"
+      ;;
+    v) echo "version $version"
+      exit
+      ;;
+    *) echo "Unknown Option '$OPTARG', exiting"
+      exit
+      ;;
+  esac
+done
+shift $((OPTIND -1))
 
 # JQ partials
 
@@ -21,12 +39,12 @@ printActionStatus='[35m\(.actionName)[0m \(.latestExecution.status)'
 checkAndPassLastChange='.latestExecution.lastStatusChange then .latestExecution.lastStatusChange'
 awsTimeSinceSecOffsets='split(".")| { offset: (.[1][6:9] | tonumber), sec: (.[0] + "Z" | fromdate) }'
 offsetAdjust='now - .sec + ((.offset + 1) * 60 * 60)'
-formatMinHour='(. / 60 | floor | tostring) + "m" + (. % 60 | tostring) + "s"'
+formatMinSec='(. / 60 | floor | tostring) + "m" + (. % 60 | tostring) + "s"'
 
 # Compose filter chain
 fullJQ=$(echo '[.stageStates[] | select( .latestExecution.status != "Succeeded")][0] | try ' $getFailedAction \
       ' |"' $printActionStatus ' (\( if ' $checkAndPassLastChange \
-        ' | ' $awsTimeSinceSecOffsets ' | ' "$offsetAdjust" ' | ' $formatMinHour \
+        ' | ' $awsTimeSinceSecOffsets ' | ' "$offsetAdjust" ' | ' $formatMinSec \
       ' else ""' \
       ' end))"')
 
@@ -56,35 +74,18 @@ awsjobs () {
   done
 }
 
-if [ -z "$AWS_JOBS_LIST" ] || [ ${#AWS_JOBS_LIST[@]} -eq 0 ]; then
-  if [[ "$1" == *"-f"* ]] && [ -n "$2" ]; then
-    echo "a file"
-    SAVEIFS=$IFS
-    IFS=$'\n'
-    AWS_JOBS_LIST=$(< "$2")
-    AWS_JOBS_LIST=($AWS_JOBS_LIST)
-    IFS=$SAVEIFS
-    echo "$AWS_JOBS_LIST"
-  else
-    echo "No jobs listed provided"
-    echo "$usage"
-    exit
-  fi
+if [ -n "$jobFile" ] && [ -f "$jobFile" ]; then
+  IFS=$'\r\n' GLOBIGNORE='*' eval 'AWS_JOBS_LIST=($(cat "$jobFile"))'
+  echo "$AWS_JOBS_LIST"
+elif [ -z "$AWS_JOBS_LIST" ] || [ ${#AWS_JOBS_LIST[@]} -eq 0 ]; then
+  echo "No jobs listed provided"
+  echo "$usage"
+  exit
 fi
 
 if [ -z "$AWS_PIPELINE_PROFILE" ]; then
   echo "AWS_PIPELINE_PROFILE not set"
   echo "$usage"
-  exit
-fi
-
-if [[ "$1" == *"-h"* ]]; then
-  echo "$usage"
-  exit
-fi
-
-if [[ "$1" == *"-h"* ]]; then
-  echo "$version"
   exit
 fi
 

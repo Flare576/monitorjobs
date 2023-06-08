@@ -14,6 +14,8 @@ You can also do `brew install flare576/scripts/monitorjobs`
 
 You will need to have [aws-cli](https://aws.amazon.com/cli/) setup and authenticated.
 
+You will also need [jq](https://jqlang.github.io/jq/download/).
+
 If you have ZSH, export your list of jobs somewhere in your profile:
 
 ```
@@ -27,9 +29,9 @@ export AWS_JOBS_LIST=(
 If you're not using ZSH, you'll need to make a configuration file where each line is a project:
 
 ```
-  SUCCESSFUL_INACTIVE_AND_HAPPY
-  I_AM_FAIL
-  IN_PROGRESS_JOB
+SUCCESSFUL_INACTIVE_AND_HAPPY
+I_AM_FAIL
+IN_PROGRESS_JOB
 ```
 
 and include it in the call with -f
