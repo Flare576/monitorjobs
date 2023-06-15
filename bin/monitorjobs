@@ -2,25 +2,27 @@
 # leave as zsh to support environment vars
 # Requirements: aws-cli, jq
 
-usage="$(basename "$0") -fvh uses aws-cli to monitor the codepipeline status of \$AWS_JOBS_LIST.
-Requirments:
-jq and aws-cli installed
-\$AWS_PIPELINE_PROFILE be set to appropriate argument to --profile option of aws-cli
-and either
-\$AWS_JOBS_LIST be set as an array which contains the jobs to monitor (ZSH)
-or
--f FILE provided which contains the jobs to monitor, one per line (other shells)
+usage="$(basename "$0") -fpvh uses aws-cli to monitor the codepipeline status of \$AWS_JOBS_LIST.
+Requirements:
+- jq installed
+- aws-cli installed and logged in/authenticated
+- Either
+  - \$AWS_PIPELINE_PROFILE set --profile option of aws-cli
+  - -p[rofile] PROFILE to pass to --profile option of aws-cli
+- Either 
+  - \$AWS_JOBS_LIST set as an array which contains the jobs to monitor (ZSH only)
+  - -f[ile] FILE provided which contains the jobs to monitor, one per line 
+"
+version="0.1.4"
 
-Additionally, user must be authenticated with aws (e.g., via .aws/config)."
-version="0.1.3"
-
-while getopts ':vhf:' option; do
+while getopts ':vhf:p:' option; do
   case "$option" in
     h) echo "$usage"
       exit
       ;;
+    p) profile="$OPTARG"
+      ;;
     f) jobFile="$OPTARG"
-      echo "sup"
       ;;
     v) echo "version $version"
       exit
@@ -76,15 +78,20 @@ awsjobs () {
 
 if [ -n "$jobFile" ] && [ -f "$jobFile" ]; then
   IFS=$'\r\n' GLOBIGNORE='*' eval 'AWS_JOBS_LIST=($(cat "$jobFile"))'
-  echo "$AWS_JOBS_LIST"
-elif [ -z "$AWS_JOBS_LIST" ] || [ ${#AWS_JOBS_LIST[@]} -eq 0 ]; then
+fi
+
+if [ -z "$AWS_JOBS_LIST" ] || [ ${#AWS_JOBS_LIST[@]} -eq 0 ]; then
   echo "No jobs listed provided"
   echo "$usage"
   exit
 fi
 
+if [ -n "$profile" ]; then
+  AWS_PIPELINE_PROFILE="$profile"
+fi
+
 if [ -z "$AWS_PIPELINE_PROFILE" ]; then
-  echo "AWS_PIPELINE_PROFILE not set"
+  echo "AWS_PIPELINE_PROFILE not set or -p[rofile] not provided"
   echo "$usage"
   exit
 fi
